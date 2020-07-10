@@ -2,7 +2,7 @@ import os
 import sys
 
 current_path = os.path.dirname(os.path.abspath(__file__))
-python_path = os.path.abspath(os.path.join(current_path, os.pardir, os.pardir, 'python27', '1.0'))
+python_path = os.path.abspath(os.path.join(current_path, os.pardir, os.pardir))
 
 noarch_lib = os.path.abspath(os.path.join(python_path, 'lib', 'noarch'))
 sys.path.append(noarch_lib)
@@ -35,13 +35,13 @@ from xlog import getLogger
 xlog = getLogger("x_tunnel")
 
 import xconfig
-from proxy_handler import Socks5Server
-import global_var as g
-import proxy_session
+from .proxy_handler import Socks5Server
+from . import global_var as g
+from . import proxy_session
 import simple_http_server
-import front_dispatcher
+from . import front_dispatcher
 
-import web_control
+from . import web_control
 # don't remove, launcher web_control need it.
 
 
@@ -74,6 +74,7 @@ def load_config():
     config.set_var("encrypt_method", "aes-256-cfb")
 
     config.set_var("api_server", "center.xx-net.net")
+    config.set_var("scan_servers", ["scan1"])
     config.set_var("server_host", "")
     config.set_var("server_port", 443)
     config.set_var("use_https", 1)
@@ -118,8 +119,8 @@ def load_config():
 
     config.set_var("enable_gae_proxy", 1)
     config.set_var("enable_cloudflare", 1)
-    config.set_var("enable_cloudfront", 1)
-    config.set_var("enable_heroku", 1)
+    config.set_var("enable_cloudfront", 0)
+    config.set_var("enable_heroku", 0)
     config.set_var("enable_tls_relay", 1)
     config.set_var("enable_direct", 0)
 
@@ -166,12 +167,13 @@ def main(args):
     allow_remote = args.get("allow_remote", 0)
 
     listen_ips = g.config.socks_host
-    if isinstance(listen_ips, basestring):
+    if isinstance(listen_ips, str):
         listen_ips = [listen_ips]
     else:
         listen_ips = list(listen_ips)
+
     if allow_remote and ("0.0.0.0" not in listen_ips or "::" not in listen_ips):
-        listen_ips.append("0.0.0.0")
+        listen_ips = [("0.0.0.0"),]
     addresses = [(listen_ip, g.config.socks_port) for listen_ip in listen_ips]
 
     g.socks5_server = simple_http_server.HTTPServer(addresses, Socks5Server, logger=xlog)
